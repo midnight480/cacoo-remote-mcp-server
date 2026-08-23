@@ -19,7 +19,7 @@ AWS 版との違いは、この 3 つ (実行環境・状態保存・シーク�
 - Google Cloud プロジェクトと課金の有効化
 - `gcloud` CLI (ログイン済み)
 - Terraform 1.6 以上
-- Cacoo の API キー
+- Cacoo の API キー ([発行手順](cacoo_ja.md))
 
 ## 1. Artifact Registry のリポジトリを作る
 

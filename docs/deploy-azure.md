@@ -24,7 +24,7 @@ user-assigned managed identity.
 - An Azure subscription
 - The `az` CLI, logged in
 - An Azure Container Registry (ACR)
-- A Cacoo API key
+- A Cacoo API key ([how to issue one](cacoo.md))
 
 ## 1. Create a resource group and ACR
 

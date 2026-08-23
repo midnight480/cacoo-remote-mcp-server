@@ -194,6 +194,8 @@ infra/
 ## 設定
 
 アカウントは `CACOO_ACCOUNTS_CONFIG` という 1 つの JSON 文字列で設定します。
+API キーの発行方法と `organizationKey` の調べ方は
+**[Cacoo の API キーとアカウント設定](docs/cacoo_ja.md)** を参照してください。
 
 ```json
 {
