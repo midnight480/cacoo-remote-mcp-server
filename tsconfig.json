@@ -1,0 +1,9 @@
+{
+	// エディタ用のフォールバック。実際の検査はプラットフォーム別の
+	// tsconfig.*.json が行う (npm run type-check)。
+	"extends": "./tsconfig.base.json",
+	"compilerOptions": {
+		"types": ["node"]
+	},
+	"include": ["src/**/*.ts"]
+}

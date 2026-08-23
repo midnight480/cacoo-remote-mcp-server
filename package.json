@@ -1,0 +1,38 @@
+{
+	"name": "cacoo-remote-mcp-server",
+	"version": "1.0.0",
+	"description": "Remote MCP server for the Cacoo API, deployable to Cloudflare Workers, AWS Lambda, Google Cloud Run and Azure Container Apps",
+	"type": "module",
+	"private": true,
+	"license": "MIT",
+	"engines": {
+		"node": ">=22"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/midnight480/cacoo-remote-mcp-server.git"
+	},
+	"scripts": {
+		"type-check": "tsc -p tsconfig.aws.json",
+		"test": "npm run test:cacoo-client && npm run test:tools && npm run test:oauth && npm run test:oauth-consent && npm run test:oauth-upstream",
+		"test:cacoo-client": "tsx tests/cacoo-client.test.mts",
+		"test:tools": "tsx tests/tools.test.mts",
+		"test:oauth": "tsx tests/oauth-provider.test.mts",
+		"test:oauth-consent": "tsx tests/oauth-consent.test.mts",
+		"test:oauth-upstream": "tsx tests/oauth-upstream.test.mts"
+	},
+	"dependencies": {
+		"@modelcontextprotocol/sdk": "^1.29.0",
+		"express": "^5.2.1",
+		"hono": "^4.13.3",
+		"jose": "^6.2.9",
+		"serverless-http": "^4.0.0",
+		"zod": "^3.24.3"
+	},
+	"devDependencies": {
+		"@types/express": "^5.0.6",
+		"@types/node": "^22.10.0",
+		"tsx": "^4.19.2",
+		"typescript": "^5.7.3"
+	}
+}
