@@ -13,7 +13,7 @@
 		"url": "git+https://github.com/midnight480/cacoo-remote-mcp-server.git"
 	},
 	"scripts": {
-		"type-check": "tsc -p tsconfig.cloudflare.json && tsc -p tsconfig.aws.json && tsc -p tsconfig.gcp.json",
+		"type-check": "tsc -p tsconfig.cloudflare.json && tsc -p tsconfig.aws.json && tsc -p tsconfig.gcp.json && tsc -p tsconfig.azure.json",
 		"cloudflare:deploy": "node scripts/build-deploy-config.mjs && node scripts/push-secrets.mjs && wrangler deploy --config wrangler.deploy.json",
 		"cloudflare:deploy:dry-run": "node scripts/build-deploy-config.mjs && wrangler deploy --dry-run --config wrangler.deploy.json",
 		"cloudflare:deploy:no-secrets": "node scripts/build-deploy-config.mjs && wrangler deploy --config wrangler.deploy.json",
@@ -30,6 +30,9 @@
 		"gcp:deploy": "node scripts/gcp-deploy.mjs",
 		"gcp:plan": "node scripts/gcp-deploy.mjs --skip-build --plan",
 		"gcp:validate": "terraform -chdir=infra/gcp init -input=false -backend=false && terraform -chdir=infra/gcp validate",
+		"azure:deploy": "node scripts/azure-deploy.mjs",
+		"azure:what-if": "node scripts/azure-deploy.mjs --skip-build --what-if",
+		"azure:validate": "az bicep build --file infra/azure/main.bicep --stdout > /dev/null && echo 'Bicep OK'",
 		"test": "npm run test:cacoo-client && npm run test:tools && npm run test:oauth && npm run test:oauth-consent && npm run test:oauth-upstream",
 		"test:cacoo-client": "tsx tests/cacoo-client.test.mts",
 		"test:tools": "tsx tests/tools.test.mts",
@@ -41,6 +44,9 @@
 		"@aws-sdk/client-dynamodb": "^3.1114.0",
 		"@aws-sdk/client-secrets-manager": "^3.1114.0",
 		"@aws-sdk/lib-dynamodb": "^3.1114.0",
+		"@azure/cosmos": "^4.10.0",
+		"@azure/identity": "^4.13.2",
+		"@azure/keyvault-secrets": "^4.11.2",
 		"@cloudflare/workers-oauth-provider": "^0.8.3",
 		"@google-cloud/firestore": "^9.0.0",
 		"@google-cloud/secret-manager": "^7.0.0",
