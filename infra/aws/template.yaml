@@ -232,6 +232,10 @@ Resources:
   ApiDomainMapping:
     Type: AWS::ApiGatewayV2::ApiMapping
     Condition: UseCustomDomain
+    # ApiId だけでは「ステージ」への依存が CloudFormation に伝わらず、
+    # ステージ作成前にマッピングを作って Invalid stage identifier で落ちる。
+    # AWS::Serverless::HttpApi が生成するステージの論理 ID を明示する。
+    DependsOn: HttpApiApiGatewayDefaultStage
     Properties:
       ApiId: !Ref HttpApi
       DomainName: !Ref ApiDomain
