@@ -1,0 +1,44 @@
+# SAM のパラメータ。infra/aws/params.yaml にコピーして実値を記入する。
+# params.yaml は .gitignore 済み。
+#
+#   cp infra/aws/params.example.yaml infra/aws/params.yaml
+#   npm run aws:deploy
+#
+# 注意: sam deploy --parameter-overrides に値を直接書くとカンマで分割されて
+# JSON が壊れるため、必ずこのファイル経由で渡すこと。
+
+# Cacoo アカウント設定 (1 行の JSON)
+CacooAccountsConfig: '{"accounts":[{"name":"main","apiKey":"xxx","organizationKey":"your-org-key"}],"defaultAccount":"main"}'
+
+# 許可するメールアドレス (JSON 配列)
+AllowedEmails: '["your-email@example.com"]'
+
+# Cognito Hosted UI のドメイン接頭辞 (グローバルに一意)
+CognitoDomainPrefix: 'your-unique-prefix'
+
+# このサーバの公開 URL (末尾スラッシュなし)。
+# 1 回目のデプロイでは placeholder のままにし、出力された FunctionUrl を
+# 記入して再デプロイする。
+PublicBaseUrl: 'https://placeholder.invalid'
+
+# Google Workspace 連携 (任意)。空なら Cognito の内部ユーザーのみになる。
+# Google Cloud Console の「承認済みのリダイレクト URI」に
+#   https://<CognitoDomainPrefix>.auth.<region>.amazoncognito.com/oauth2/idpresponse
+# を登録しておくこと。
+GoogleClientId: ''
+GoogleClientSecret: ''
+
+# --- カスタムドメイン (任意) ---
+# 空なら API Gateway の既定エンドポイントを使う。
+ApiDomainName: ''
+
+# Route 53 にゾーンがある場合: ホストゾーン ID を入れると、証明書の発行・
+# DNS 検証・A レコード作成まで CloudFormation が自動で行う。
+# この場合 AcmCertificateArn は不要。
+HostedZoneId: ''
+
+# Route 53 以外で DNS を管理している場合: 先に証明書を発行して ARN を入れる。
+#   npm run aws:request-cert -- --domain cacoo-mcp.example.com
+# デプロイ後、出力される CustomDomainTarget に向けて CNAME を登録する
+# (Cloudflare DNS なら Proxy は OFF = DNS only)。
+AcmCertificateArn: ''

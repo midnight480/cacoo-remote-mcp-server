@@ -14,6 +14,12 @@
 	},
 	"scripts": {
 		"type-check": "tsc -p tsconfig.aws.json",
+		"aws:build": "sam build --template infra/aws/template.yaml",
+		"aws:deploy": "node scripts/aws-deploy.mjs",
+		"aws:validate": "sam validate --template infra/aws/template.yaml --lint",
+		"aws:secrets:push": "node scripts/aws-push-secrets.mjs",
+		"aws:secrets:dry-run": "node scripts/aws-push-secrets.mjs --dry-run",
+		"aws:request-cert": "node scripts/aws-request-cert.mjs",
 		"test": "npm run test:cacoo-client && npm run test:tools && npm run test:oauth && npm run test:oauth-consent && npm run test:oauth-upstream",
 		"test:cacoo-client": "tsx tests/cacoo-client.test.mts",
 		"test:tools": "tsx tests/tools.test.mts",
@@ -22,6 +28,9 @@
 		"test:oauth-upstream": "tsx tests/oauth-upstream.test.mts"
 	},
 	"dependencies": {
+		"@aws-sdk/client-dynamodb": "^3.1114.0",
+		"@aws-sdk/client-secrets-manager": "^3.1114.0",
+		"@aws-sdk/lib-dynamodb": "^3.1114.0",
 		"@modelcontextprotocol/sdk": "^1.29.0",
 		"express": "^5.2.1",
 		"hono": "^4.13.3",

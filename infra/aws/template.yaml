@@ -1,0 +1,354 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Cacoo Remote MCP Server (AWS platform)
+
+Parameters:
+  CacooAccountsConfig:
+    Type: String
+    NoEcho: true
+    Description: CACOO_ACCOUNTS_CONFIG (JSON)
+  AllowedEmails:
+    Type: String
+    Default: "[]"
+    Description: ALLOWED_EMAILS (JSON array)
+  CognitoDomainPrefix:
+    Type: String
+    Description: Cognito Hosted UI のドメイン接頭辞 (グローバルに一意)
+  GoogleClientId:
+    Type: String
+    Default: ""
+    Description: >
+      Google Cloud Console の OAuth 2.0 クライアント ID。
+      空のままなら Google 連携を作らず、Cognito の内部ユーザーのみになる。
+  GoogleClientSecret:
+    Type: String
+    NoEcho: true
+    Default: ""
+    Description: Google OAuth 2.0 クライアントシークレット
+  LogRetentionDays:
+    Type: Number
+    Default: 30
+    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1096, 1827, 2192, 2557, 2922, 3288, 3653]
+    Description: >
+      CloudWatch Logs の保持期間 (日)。Lambda が自動作成するロググループは
+      既定で無期限に残るため、明示的に管理する。
+  ApiDomainName:
+    Type: String
+    Default: ""
+    Description: >
+      API Gateway に割り当てるカスタムドメイン (例: cacoo-mcp.example.com)。
+      空なら API Gateway の既定エンドポイントを使う。
+      AcmCertificateArn と両方が設定されているときだけ有効になる。
+  HostedZoneId:
+    Type: String
+    Default: ""
+    Description: >
+      ApiDomainName を管理する Route 53 ホストゾーンの ID。
+      指定すると ACM 証明書の作成・DNS 検証・A レコード作成まで
+      すべてこのテンプレートが行う (完全自動)。
+      Route 53 以外で DNS を管理している場合は空にし、AcmCertificateArn を
+      渡すこと。
+  AcmCertificateArn:
+    Type: String
+    Default: ""
+    Description: >
+      ApiDomainName に対応する ACM 証明書の ARN。HTTP API のリージョナル
+      エンドポイント用なので、このスタックと同じリージョンの証明書が要る。
+      HostedZoneId を指定しない場合 (Route 53 以外で DNS を管理している場合) に
+      使う。npm run aws:request-cert で発行できる。
+      Route 53 外の DNS でテンプレート内に証明書を作ると、CloudFormation が
+      検証完了まで待ち続けて詰まるため、この場合は事前発行が必要。
+  PublicBaseUrl:
+    Type: String
+    Default: "https://placeholder.invalid"
+    Description: >
+      このサーバの公開 URL (末尾スラッシュなし)。Function URL は
+      CloudFormation が生成するまで確定しないため、1 回目のデプロイ後に
+      出力された FunctionUrl を指定して再デプロイする。
+
+Conditions:
+  UseGoogle: !Not [!Equals [!Ref GoogleClientId, ""]]
+  HasDomain: !Not [!Equals [!Ref ApiDomainName, ""]]
+  HasCertArn: !Not [!Equals [!Ref AcmCertificateArn, ""]]
+  HasHostedZone: !Not [!Equals [!Ref HostedZoneId, ""]]
+  # Route 53 にゾーンがあり証明書 ARN を渡していないときだけ証明書を作る
+  CreateCertificate: !And
+    - !Condition HasDomain
+    - !Condition HasHostedZone
+    - !Not [!Condition HasCertArn]
+  UseCustomDomain: !And
+    - !Condition HasDomain
+    - !Or [!Condition HasCertArn, !Condition HasHostedZone]
+  CreateDnsRecord: !And
+    - !Condition HasDomain
+    - !Condition HasHostedZone
+
+Globals:
+  Function:
+    Runtime: nodejs22.x
+    Architectures: [arm64]
+    Timeout: 30
+    MemorySize: 512
+
+Resources:
+  # --- OAuth の状態保存 (Cloudflare 版の KV に相当) ---
+  AuthTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
+      SSESpecification:
+        SSEEnabled: true
+
+  # --- 上流 IdP (Cloudflare Access に相当) ---
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub "${AWS::StackName}-users"
+      AutoVerifiedAttributes: [email]
+      UsernameAttributes: [email]
+      Schema:
+        - Name: email
+          AttributeDataType: String
+          Required: true
+          Mutable: true
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: true
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 12
+          RequireLowercase: true
+          RequireUppercase: true
+          RequireNumbers: true
+          RequireSymbols: false
+
+  UserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      Domain: !Ref CognitoDomainPrefix
+      UserPoolId: !Ref UserPool
+
+  GoogleIdentityProvider:
+    Type: AWS::Cognito::UserPoolIdentityProvider
+    Condition: UseGoogle
+    Properties:
+      UserPoolId: !Ref UserPool
+      ProviderName: Google
+      ProviderType: Google
+      ProviderDetails:
+        client_id: !Ref GoogleClientId
+        client_secret: !Ref GoogleClientSecret
+        authorize_scopes: "openid email profile"
+      # email_verified を明示的に写す。これが無いと Cognito 側で未設定になり、
+      # ID トークンの検証で「検証済みか判別できない」状態になる。
+      AttributeMapping:
+        email: email
+        email_verified: email_verified
+        name: name
+        username: sub
+
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref UserPool
+      ClientName: !Sub "${AWS::StackName}-mcp"
+      GenerateSecret: true
+      AllowedOAuthFlows: [code]
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthScopes: [openid, email, profile]
+      # !Ref GoogleIdentityProvider が IdP 名 ("Google") を返すため、
+      # ここで参照することで「IdP 作成後にクライアントを更新する」順序が
+      # 暗黙に保証される。条件付きリソースへの DependsOn は使えない。
+      SupportedIdentityProviders: !If
+        - UseGoogle
+        - [COGNITO, !Ref GoogleIdentityProvider]
+        - [COGNITO]
+      CallbackURLs:
+        - !Sub "${PublicBaseUrl}/callback"
+      PreventUserExistenceErrors: ENABLED
+
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: $default
+
+  # --- シークレット ---
+  # Lambda の環境変数は lambda:GetFunctionConfiguration 権限があれば読めるため、
+  # Cacoo API キーと Cognito の client secret は Secrets Manager に置く。
+  UpstreamClientSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub "${AWS::StackName}/upstream-client-secret"
+      SecretString: !GetAtt UserPoolClient.ClientSecret
+
+  # 同意画面の CSRF / 承認済みクライアント Cookie の署名鍵。
+  # 値は CloudFormation が生成するので、運用者が用意する必要はない。
+  CookieSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub "${AWS::StackName}/cookie-secret"
+      GenerateSecretString:
+        PasswordLength: 64
+        ExcludePunctuation: true
+
+  CacooAccountsSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub "${AWS::StackName}/cacoo-accounts-config"
+      SecretString: !Ref CacooAccountsConfig
+
+  # Route 53 にゾーンがある場合のみ。DNS 検証レコードも ACM が自動作成する。
+  ApiCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Condition: CreateCertificate
+    Properties:
+      DomainName: !Ref ApiDomainName
+      ValidationMethod: DNS
+      DomainValidationOptions:
+        - DomainName: !Ref ApiDomainName
+          HostedZoneId: !Ref HostedZoneId
+
+  ApiDomain:
+    Type: AWS::ApiGatewayV2::DomainName
+    Condition: UseCustomDomain
+    Properties:
+      DomainName: !Ref ApiDomainName
+      DomainNameConfigurations:
+        - CertificateArn: !If
+            - HasCertArn
+            - !Ref AcmCertificateArn
+            - !Ref ApiCertificate
+          EndpointType: REGIONAL
+          SecurityPolicy: TLS_1_2
+
+  ApiDomainMapping:
+    Type: AWS::ApiGatewayV2::ApiMapping
+    Condition: UseCustomDomain
+    Properties:
+      ApiId: !Ref HttpApi
+      DomainName: !Ref ApiDomain
+      Stage: $default
+
+  # Route 53 にゾーンがある場合のみ。それ以外は CustomDomainTarget を
+  # 手動で DNS に登録する。
+  ApiDomainRecord:
+    Type: AWS::Route53::RecordSet
+    Condition: CreateDnsRecord
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref ApiDomainName
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt ApiDomain.RegionalDomainName
+        HostedZoneId: !GetAtt ApiDomain.RegionalHostedZoneId
+        EvaluateTargetHealth: false
+
+  # Lambda に自動作成させると保持期間が無期限になり、スタックを削除しても
+  # ロググループが残る。CloudFormation に管理させることで両方を解決する。
+  McpFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-mcp"
+      RetentionInDays: !Ref LogRetentionDays
+
+  McpFunction:
+    Type: AWS::Serverless::Function
+    # ロググループ名を固定するために関数名を固定する
+    DependsOn: McpFunctionLogGroup
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-mcp"
+      # esbuild ビルダーが esbuild と依存関係を解決できるようリポジトリルートを指す
+      CodeUri: ../../
+      Handler: handler.handler
+      Environment:
+        Variables:
+          # 値そのものではなく ARN を渡し、実行時に取得する
+          CACOO_ACCOUNTS_SECRET_ARN: !Ref CacooAccountsSecret
+          UPSTREAM_CLIENT_SECRET_ARN: !Ref UpstreamClientSecret
+          COOKIE_SECRET_ARN: !Ref CookieSecret
+          # 許可メールは機密ではないため環境変数のままでよい
+          ALLOWED_EMAILS: !Ref AllowedEmails
+          AUTH_TABLE_NAME: !Ref AuthTable
+          UPSTREAM_DOMAIN: !Sub "https://${CognitoDomainPrefix}.auth.${AWS::Region}.amazoncognito.com"
+          UPSTREAM_CLIENT_ID: !Ref UserPoolClient
+          UPSTREAM_ISSUER: !Sub "https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}"
+          # 1 回目のデプロイでは placeholder。FunctionUrl 確定後に再デプロイする
+          ISSUER_URL: !Ref PublicBaseUrl
+          NODE_OPTIONS: --enable-source-maps
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AuthTable
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Ref UpstreamClientSecret
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Ref CacooAccountsSecret
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Ref CookieSecret
+      # Lambda Function URL は使わない。WWW-Authenticate を
+      # x-amzn-Remapped-www-authenticate に書き換えてしまい、MCP クライアントの
+      # 保護リソース探索 (RFC 9728) が働かなくなるため。API Gateway HTTP API は
+      # このヘッダをそのまま通す (実測で確認済み)。
+      Events:
+        HttpApiProxy:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /{proxy+}
+            Method: ANY
+        HttpApiRoot:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /
+            Method: ANY
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: node22
+        Sourcemap: true
+        # CJS で出力する。serverless-http / express など CJS 依存が
+        # require("http") を動的に呼ぶため、ESM 出力だと実行時に失敗する。
+        Format: cjs
+        MainFields: main,module
+        EntryPoints:
+          - src/platforms/aws/handler.ts
+
+Outputs:
+  HttpApiUrl:
+    Description: API Gateway の既定エンドポイント
+    Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+  CustomDomainUrl:
+    Condition: UseCustomDomain
+    Description: カスタムドメインの URL
+    Value: !Sub "https://${ApiDomainName}"
+  CustomDomainTarget:
+    Condition: UseCustomDomain
+    Description: >
+      DNS に登録する CNAME の向き先。カスタムドメインの CNAME レコードを
+      この値に向ける (Cloudflare DNS なら Proxy は OFF = DNS only にすること)。
+    Value: !GetAtt ApiDomain.RegionalDomainName
+  FunctionName:
+    Value: !Ref McpFunction
+  AuthTableName:
+    Value: !Ref AuthTable
+  UserPoolId:
+    Value: !Ref UserPool
+  UserPoolClientId:
+    Value: !Ref UserPoolClient
+  LogGroupName:
+    Description: CloudWatch Logs のロググループ
+    Value: !Ref McpFunctionLogGroup
+  CognitoDomain:
+    Value: !Sub "https://${CognitoDomainPrefix}.auth.${AWS::Region}.amazoncognito.com"
+  GoogleRedirectUri:
+    Description: Google Cloud Console の「承認済みのリダイレクト URI」に登録する値
+    Value: !Sub "https://${CognitoDomainPrefix}.auth.${AWS::Region}.amazoncognito.com/oauth2/idpresponse"
