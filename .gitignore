@@ -1,0 +1,19 @@
+node_modules/
+dist/
+build/
+.dev.vars
+.wrangler/
+wrangler.deploy.json
+.aws-sam/
+.mcpb-build/
+samconfig.toml
+infra/aws/params.yaml
+
+# Terraform (GCP)
+infra/gcp/terraform.tfvars
+infra/gcp/.terraform/
+*.tfstate
+*.tfstate.*
+
+# Azure
+infra/azure/params.json
