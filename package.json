@@ -13,7 +13,14 @@
 		"url": "git+https://github.com/midnight480/cacoo-remote-mcp-server.git"
 	},
 	"scripts": {
-		"type-check": "tsc -p tsconfig.aws.json",
+		"type-check": "tsc -p tsconfig.cloudflare.json && tsc -p tsconfig.aws.json",
+		"cloudflare:deploy": "node scripts/build-deploy-config.mjs && node scripts/push-secrets.mjs && wrangler deploy --config wrangler.deploy.json",
+		"cloudflare:deploy:dry-run": "node scripts/build-deploy-config.mjs && wrangler deploy --dry-run --config wrangler.deploy.json",
+		"cloudflare:deploy:no-secrets": "node scripts/build-deploy-config.mjs && wrangler deploy --config wrangler.deploy.json",
+		"cloudflare:secrets:push": "node scripts/build-deploy-config.mjs && node scripts/push-secrets.mjs",
+		"cloudflare:secrets:dry-run": "node scripts/push-secrets.mjs --dry-run",
+		"dev": "wrangler dev",
+		"check:local": "node scripts/local-mcp-check.mjs",
 		"aws:build": "sam build --template infra/aws/template.yaml",
 		"aws:deploy": "node scripts/aws-deploy.mjs",
 		"aws:validate": "sam validate --template infra/aws/template.yaml --lint",
@@ -31,17 +38,21 @@
 		"@aws-sdk/client-dynamodb": "^3.1114.0",
 		"@aws-sdk/client-secrets-manager": "^3.1114.0",
 		"@aws-sdk/lib-dynamodb": "^3.1114.0",
-		"@modelcontextprotocol/sdk": "^1.29.0",
+		"@cloudflare/workers-oauth-provider": "^0.8.3",
+		"@modelcontextprotocol/sdk": "1.29.0",
+		"agents": "^0.17.4",
 		"express": "^5.2.1",
 		"hono": "^4.13.3",
 		"jose": "^6.2.9",
 		"serverless-http": "^4.0.0",
-		"zod": "^3.24.3"
+		"zod": "^4.4.3"
 	},
 	"devDependencies": {
+		"@cloudflare/workers-types": "^5.20260820.1",
 		"@types/express": "^5.0.6",
 		"@types/node": "^22.10.0",
 		"tsx": "^4.19.2",
-		"typescript": "^5.7.3"
+		"typescript": "^5.7.3",
+		"wrangler": "^4.124.0"
 	}
 }
