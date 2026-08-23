@@ -1,0 +1,21 @@
+# infra/gcp/terraform.tfvars として複製して埋める。
+# このファイルは機密値を含むので .gitignore 済み。
+
+project_id      = "your-gcp-project"
+region          = "asia-northeast1"
+image           = "asia-northeast1-docker.pkg.dev/your-gcp-project/cacoo-mcp/cacoo-mcp:latest"
+public_base_url = "https://cacoo-mcp.example.com"
+custom_domain   = "cacoo-mcp.example.com"
+
+# ツールの利用を許可するメールアドレス
+allowed_emails = "[\"you@example.com\"]"
+
+# 上流 IdP。既定は Google アカウント。
+# Entra ID を使う場合は upstream_idp = "entra" と upstream_tenant_id を設定する。
+upstream_idp           = "google"
+upstream_client_id     = "xxxxxxxx.apps.googleusercontent.com"
+upstream_client_secret = "GOCSPX-xxxxxxxxxxxxxxxx"
+# upstream_tenant_id   = "11111111-2222-3333-4444-555555555555"
+
+# Cacoo のアカウント設定
+cacoo_accounts_config = "{\"accounts\":[{\"name\":\"main\",\"apiKey\":\"xxx\",\"organizationKey\":\"your-org-key\"}],\"defaultAccount\":\"main\"}"
