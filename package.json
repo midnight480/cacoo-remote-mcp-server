@@ -33,6 +33,7 @@
 		"azure:deploy": "node scripts/azure-deploy.mjs",
 		"azure:what-if": "node scripts/azure-deploy.mjs --skip-build --what-if",
 		"azure:validate": "az bicep build --file infra/azure/main.bicep --stdout > /dev/null && echo 'Bicep OK'",
+		"mcpb:pack": "node scripts/build-mcpb.mjs",
 		"test": "npm run test:cacoo-client && npm run test:tools && npm run test:oauth && npm run test:oauth-consent && npm run test:oauth-upstream",
 		"test:cacoo-client": "tsx tests/cacoo-client.test.mts",
 		"test:tools": "tsx tests/tools.test.mts",

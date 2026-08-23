@@ -237,6 +237,24 @@ claude mcp add --transport http cacoo https://<your-domain>/mcp -s user
 
 A browser opens on first connection and asks you to authenticate.
 
+### Claude Desktop (.mcpb bundle)
+
+Instead of hand-editing the JSON above, you can double-click a `.mcpb` (MCP Bundle) to
+install it. It is generated during deploy and written to `dist/`.
+
+```bash
+npm run mcpb:pack   # generate on its own
+npm run aws:deploy  # generated as part of the deploy
+```
+
+The endpoint URL is a `user_config` field, and the domain you deployed to is baked in as
+its default, resolved from `--host`, `MCP_HOSTNAME`, `ApiDomainName` in
+`infra/aws/params.yaml`, or `MCP_HOSTNAME` in `.dev.vars`, in that order.
+
+**The bundle does not contain the server itself.** MCPB is a local-execution format, so
+it ships `mcp-remote` as a stdio proxy that connects to your deployed server. Claude Code
+does not use this bundle — it stays on `claude mcp add --transport http`.
+
 ## Available Tools
 
 ### Diagrams
