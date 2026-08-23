@@ -1,0 +1,15 @@
+# デプロイ先のカスタムドメイン (npm run deploy がここから読む)
+MCP_HOSTNAME=your-worker.example.com
+
+# OAuth 用 KV namespace の ID (npm run deploy がここから読む)
+OAUTH_KV_ID=your-kv-namespace-id
+
+ACCESS_CLIENT_ID=your-local-client-id
+ACCESS_CLIENT_SECRET=your-local-client-secret
+ACCESS_TOKEN_URL=https://your-team.cloudflareaccess.com/cdn-cgi/access/sso/oidc/xxx/token
+ACCESS_AUTHORIZATION_URL=https://your-team.cloudflareaccess.com/cdn-cgi/access/sso/oidc/xxx/authorization
+ACCESS_JWKS_URL=https://your-team.cloudflareaccess.com/cdn-cgi/access/sso/oidc/xxx/jwks
+COOKIE_ENCRYPTION_KEY=your-random-hex-string
+ALLOWED_EMAILS=["your-email@gmail.com"]
+# readOnly:true のスペースは GET 以外の API を拒否する (共用スペースの誤更新・誤削除を防ぐ)
+CACOO_ACCOUNTS_CONFIG={"accounts":[{"name":"main","apiKey":"xxx","organizationKey":"your-org-key"},{"name":"shared","apiKey":"yyy","readOnly":true}],"defaultAccount":"main"}

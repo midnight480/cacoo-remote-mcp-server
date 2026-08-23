@@ -1,0 +1,9 @@
+{
+	// Cloudflare Workers 向け。Node のグローバルは入れない (nodejs_compat 経由の
+	// node: プレフィックス import のみ許可される) ため、誤用を型で検出できる。
+	"extends": "./tsconfig.base.json",
+	"compilerOptions": {
+		"types": ["@cloudflare/workers-types", "node"]
+	},
+	"include": ["src/core/**/*.ts", "src/platforms/cloudflare/**/*.ts", "worker-configuration.d.ts"]
+}
