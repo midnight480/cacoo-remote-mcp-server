@@ -192,7 +192,9 @@ the Express app to the runtime.
 
 ## Configuration
 
-Accounts are configured as a single JSON string, `CACOO_ACCOUNTS_CONFIG`:
+Accounts are configured as a single JSON string, `CACOO_ACCOUNTS_CONFIG`.
+See **[Cacoo API keys and account configuration](docs/cacoo.md)** for how to issue a
+key and find your `organizationKey`.
 
 ```json
 {

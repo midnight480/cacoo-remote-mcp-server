@@ -20,7 +20,7 @@ and `src/oauth`.
 - A Google Cloud project with billing enabled
 - The `gcloud` CLI, logged in
 - Terraform 1.6 or later
-- A Cacoo API key
+- A Cacoo API key ([how to issue one](cacoo.md))
 
 ## 1. Create an Artifact Registry repository
 

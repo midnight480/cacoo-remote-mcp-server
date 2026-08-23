@@ -23,7 +23,7 @@ RBAC で接続します。
 - Azure サブスクリプション
 - `az` CLI (ログイン済み)
 - Azure Container Registry (ACR)
-- Cacoo の API キー
+- Cacoo の API キー ([発行手順](cacoo_ja.md))
 
 ## 1. リソースグループと ACR を作る
 
