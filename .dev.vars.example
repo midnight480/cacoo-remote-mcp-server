@@ -10,6 +10,8 @@ ACCESS_TOKEN_URL=https://your-team.cloudflareaccess.com/cdn-cgi/access/sso/oidc/
 ACCESS_AUTHORIZATION_URL=https://your-team.cloudflareaccess.com/cdn-cgi/access/sso/oidc/xxx/authorization
 ACCESS_JWKS_URL=https://your-team.cloudflareaccess.com/cdn-cgi/access/sso/oidc/xxx/jwks
 COOKIE_ENCRYPTION_KEY=your-random-hex-string
+# ⚠ 空にすると許可リストなしとして扱われ、上流 IdP を通れた人全員が全ツールを
+#   使えます。ここが実質的な認可境界なので、必ず自分のアドレスを入れてください。
 ALLOWED_EMAILS=["your-email@gmail.com"]
 # readOnly:true のスペースは GET 以外の API を拒否する (共用スペースの誤更新・誤削除を防ぐ)
 CACOO_ACCOUNTS_CONFIG={"accounts":[{"name":"main","apiKey":"xxx","organizationKey":"your-org-key"},{"name":"shared","apiKey":"yyy","readOnly":true}],"defaultAccount":"main"}

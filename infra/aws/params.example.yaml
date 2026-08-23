@@ -11,6 +11,11 @@
 CacooAccountsConfig: '{"accounts":[{"name":"main","apiKey":"xxx","organizationKey":"your-org-key"}],"defaultAccount":"main"}'
 
 # 許可するメールアドレス (JSON 配列)
+#
+# ⚠ 空の配列 '[]' にすると許可リストなしとして扱われ、上流 IdP を通れた人全員が
+#   全ツールを使えます。上流 IdP が Google のような公開 IdP の場合、事実上
+#   誰でも Cacoo のデータを読み書きできる状態になります。
+#   ここがこのサーバの実質的な認可境界なので、必ず自分のアドレスを入れてください。
 AllowedEmails: '["your-email@example.com"]'
 
 # Cognito Hosted UI のドメイン接頭辞 (グローバルに一意)

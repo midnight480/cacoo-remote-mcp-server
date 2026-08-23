@@ -63,6 +63,10 @@ cp infra/azure/params.example.json infra/azure/params.json
 | `upstreamClientId` / `upstreamClientSecret` | The app registration from step 2 |
 | `cacooAccountsConfig` | Cacoo account configuration (JSON string) |
 
+> **⚠ Do not leave `allowedEmails` empty.**
+> An empty array means no allowlist, so anyone who can sign in through the upstream IdP
+> gets every tool. This is the effective authorization boundary of the server.
+
 `upstreamTenantId` defaults to the current subscription's tenant. `cookieSecret` is
 generated if omitted.
 

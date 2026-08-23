@@ -8,6 +8,9 @@ public_base_url = "https://cacoo-mcp.example.com"
 custom_domain   = "cacoo-mcp.example.com"
 
 # ツールの利用を許可するメールアドレス
+#
+# ⚠ 空の配列 "[]" にすると許可リストなしとして扱われ、上流 IdP を通れた人全員が
+#   全ツールを使えます。ここが実質的な認可境界なので、必ず自分のアドレスを入れてください。
 allowed_emails = "[\"you@example.com\"]"
 
 # 上流 IdP。既定は Google アカウント。
