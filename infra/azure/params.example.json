@@ -1,0 +1,15 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "name":                 { "value": "cacoo-mcp" },
+    "image":                { "value": "myacr.azurecr.io/cacoo-mcp:latest" },
+    "registryServer":       { "value": "myacr.azurecr.io" },
+    "publicBaseUrl":        { "value": "https://cacoo-mcp.example.com" },
+    "allowedEmails":        { "value": "[\"you@example.com\"]" },
+    "upstreamIdp":          { "value": "entra" },
+    "upstreamClientId":     { "value": "00000000-1111-2222-3333-444444444444" },
+    "upstreamClientSecret": { "value": "<TODO: Entra ID アプリのクライアント secret>" },
+    "cacooAccountsConfig":  { "value": "{\"accounts\":[{\"name\":\"main\",\"apiKey\":\"xxx\",\"organizationKey\":\"your-org-key\"}],\"defaultAccount\":\"main\"}" }
+  }
+}
