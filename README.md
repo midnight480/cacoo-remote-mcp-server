@@ -284,7 +284,9 @@ does not use this bundle — it stays on `claude mcp add --transport http`.
 ## Security
 
 - **Authentication**: OAuth 2.1 with PKCE (S256) against an upstream IdP
-- **Authorization**: `ALLOWED_EMAILS` provides an application-level email allowlist
+- **Authorization**: `ALLOWED_EMAILS` provides an application-level email allowlist.
+  **Leaving it empty disables the allowlist**, so anyone who can sign in through the
+  upstream IdP gets every tool
 - **API key protection**: Cacoo API keys stay on the server and are never sent to clients
 - **Client consent**: Dynamic Client Registration is open to anyone, so authorization is
   gated behind a consent screen naming the client and its redirect target, with CSRF

@@ -62,6 +62,10 @@ cp infra/azure/params.example.json infra/azure/params.json
 | `upstreamClientId` / `upstreamClientSecret` | 手順 2 で作ったアプリ登録 |
 | `cacooAccountsConfig` | Cacoo のアカウント設定 (JSON 文字列) |
 
+> **⚠ `allowedEmails` を空にしないでください。**
+> 空の配列にすると許可リストなしとして扱われ、上流 IdP を通れた人全員が全ツールを
+> 使えます。ここがこのサーバの実質的な認可境界です。
+
 `upstreamTenantId` は省略すると現在のサブスクリプションのテナントを使います。
 `cookieSecret` は省略すると生成されます。
 

@@ -63,6 +63,10 @@ cp infra/gcp/terraform.tfvars.example infra/gcp/terraform.tfvars
 | `upstream_client_id` / `upstream_client_secret` | 手順 2 で作った OAuth クライアント |
 | `cacoo_accounts_config` | Cacoo のアカウント設定 (JSON 文字列) |
 
+> **⚠ `allowedEmails` を空にしないでください。**
+> 空の配列にすると許可リストなしとして扱われ、上流 IdP を通れた人全員が全ツールを
+> 使えます。ここがこのサーバの実質的な認可境界です。
+
 このファイルは機密値を含むため `.gitignore` 済みです。
 
 ## 4. デプロイ
