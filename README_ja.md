@@ -238,6 +238,24 @@ claude mcp add --transport http cacoo https://<あなたのドメイン>/mcp -s 
 
 初回接続時にブラウザが開き、認証を求められます。
 
+### Claude Desktop (.mcpb バンドル)
+
+上の JSON を手で書く代わりに、`.mcpb` (MCP Bundle) をダブルクリックで
+インストールできます。デプロイ時に自動生成され、`dist/` に出力されます。
+
+```bash
+npm run mcpb:pack   # 単体で生成
+npm run aws:deploy  # デプロイのついでに生成
+```
+
+エンドポイント URL は `user_config` になっており、デプロイ先のドメインが既定値として
+埋め込まれます。解決順は `--host` 引数 > `MCP_HOSTNAME` 環境変数 >
+`infra/aws/params.yaml` の `ApiDomainName` > `.dev.vars` の `MCP_HOSTNAME` です。
+
+**バンドルにサーバ本体は入っていません。** MCPB はローカル実行専用の形式なので、
+`mcp-remote` を stdio プロキシとして同梱し、そこからデプロイ済みのサーバへ繋ぎます。
+Claude Code はこのバンドルを使いません (`claude mcp add --transport http` のまま)。
+
 ## 利用可能なツール
 
 ### 図 (Diagram)
