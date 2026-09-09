@@ -34,12 +34,14 @@
 		"azure:what-if": "node scripts/azure-deploy.mjs --skip-build --what-if",
 		"azure:validate": "az bicep build --file infra/azure/main.bicep --stdout > /dev/null && echo 'Bicep OK'",
 		"mcpb:pack": "node scripts/build-mcpb.mjs",
-		"test": "npm run test:cacoo-client && npm run test:tools && npm run test:oauth && npm run test:oauth-consent && npm run test:oauth-upstream",
+		"test": "npm run test:cacoo-client && npm run test:tools && npm run test:oauth && npm run test:oauth-consent && npm run test:oauth-upstream && npm run test:credentials && npm run test:user-credentials",
 		"test:cacoo-client": "tsx tests/cacoo-client.test.mts",
 		"test:tools": "tsx tests/tools.test.mts",
 		"test:oauth": "tsx tests/oauth-provider.test.mts",
 		"test:oauth-consent": "tsx tests/oauth-consent.test.mts",
-		"test:oauth-upstream": "tsx tests/oauth-upstream.test.mts"
+		"test:oauth-upstream": "tsx tests/oauth-upstream.test.mts",
+		"test:credentials": "tsx tests/credentials.test.mts",
+		"test:user-credentials": "tsx tests/user-credentials-e2e.test.mts"
 	},
 	"dependencies": {
 		"@aws-sdk/client-dynamodb": "^3.1114.0",

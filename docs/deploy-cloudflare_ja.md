@@ -8,7 +8,7 @@
 | 役割 | 使うもの |
 |---|---|
 | 実行環境 | Cloudflare Workers |
-| MCP セッション | Durable Objects (`McpAgent`) |
+| MCP セッション | ステートレス (`createMcpHandler`。リクエストごとに組み立て) |
 | OAuth 認可サーバ | `@cloudflare/workers-oauth-provider` |
 | 上流 IdP | Cloudflare Access (SaaS アプリ / OIDC) |
 | 状態保存 | Workers KV |

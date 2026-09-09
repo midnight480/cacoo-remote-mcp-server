@@ -36,8 +36,13 @@ threw = false;
 try { parseAccountsConfig(JSON.stringify({ accounts: [] })); } catch { threw = true; }
 ok("空のアカウント一覧はエラー", threw);
 threw = false;
-try { parseAccountsConfig(JSON.stringify({ accounts: [{ name: "x" }] })); } catch { threw = true; }
-ok("apiKey 欠落はエラー", threw);
+try { parseAccountsConfig(JSON.stringify({ accounts: [{ apiKey: "k" }] })); } catch { threw = true; }
+ok("name 欠落はエラー", threw);
+// apiKey は任意になった。省略したアカウントは、利用者本人のキーが渡された
+// リクエストでのみ使える (src/core/credentials.ts)。設定時ではなく、
+// キーが無いまま API を呼んだ時点で MissingCredentialError になる。
+ok("apiKey 欠落は設定時には通る",
+  parseAccountsConfig(JSON.stringify({ accounts: [{ name: "x" }] })).accounts[0].apiKey === undefined);
 
 console.log("アカウントの解決:");
 ok("既定を使う", resolveAccount(cfg).name === "main");

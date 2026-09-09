@@ -7,6 +7,7 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { type CacooAccountsConfig, parseAccountsConfig } from "./cacoo-client";
+import { applyUserCredentials, type UserCredentials } from "./credentials";
 import { registerDiagramTools } from "./tools/diagram-tools";
 import { registerWorkspaceTools } from "./tools/workspace-tools";
 
@@ -20,6 +21,15 @@ export interface CreateServerOptions {
 	allowedEmails?: string;
 	/** 認証済みユーザーのメールアドレス */
 	userEmail?: string;
+	/**
+	 * 利用者本人の Cacoo API キーと organizationKey。
+	 * リクエストごとにクライアントから運ばれてくるもので、サーバは保存しない。
+	 * 指定されたアカウントでは設定側の共有キーより優先される。
+	 *
+	 * 配列を渡すと、優先度の低い順に並んでいるものとして扱う。
+	 * 運搬経路が複数ある場合 (トークンの封筒とヘッダ) に、後のものを優先させる。
+	 */
+	userCredentials?: UserCredentials | UserCredentials[];
 }
 
 /** ALLOWED_EMAILS を小文字化した Set に変換する。不正なJSONは空集合として扱う。 */
@@ -66,7 +76,16 @@ export function registerTools(server: McpServer, options: CreateServerOptions): 
 		return;
 	}
 
-	const config: CacooAccountsConfig = parseAccountsConfig(options.accountsConfig);
+	// 共有キーの上に本人のキーと組織を重ねる。以降のツールは出所を意識しない。
+	const sources = Array.isArray(options.userCredentials)
+		? options.userCredentials
+		: options.userCredentials
+			? [options.userCredentials]
+			: [];
+	const config: CacooAccountsConfig = applyUserCredentials(
+		parseAccountsConfig(options.accountsConfig),
+		...sources,
+	);
 	registerWorkspaceTools(server, config);
 	registerDiagramTools(server, config);
 }

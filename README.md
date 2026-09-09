@@ -11,9 +11,10 @@ once in the browser with OAuth, and your Cacoo API key never leaves the server.
 ## Features
 
 - **14 MCP tools** covering diagrams, folders, organizations and account information
-- **OAuth 2.1 with PKCE** — clients authenticate in the browser; no API key on the client
+- **OAuth 2.1 with PKCE** — clients authenticate in the browser
 - **Email allowlist** — application-level authorization on top of the upstream IdP
 - **Multiple Cacoo accounts** — route per call, with a per-account read-only guard
+- **Per-user API keys and organizations** — each caller acts as themselves in Cacoo instead of one shared system user. Clients send their own key and `organizationKey` per request, and **the server stores no Cacoo credentials** ([details](docs/cacoo.md#per-user-api-keys-and-organizations))
 - **Four deployment targets** sharing the same tool implementations
 
 ## Choosing a deployment
@@ -21,7 +22,7 @@ once in the browser with OAuth, and your Cacoo API key never leaves the server.
 | | Cloudflare | AWS | Google Cloud | Azure |
 |---|---|---|---|---|
 | Runtime | Workers (edge) | Lambda + API Gateway | Cloud Run | Container Apps |
-| MCP session | Durable Objects | Stateless | Stateless | Stateless |
+| MCP session | Stateless | Stateless | Stateless | Stateless |
 | OAuth authorization server | `@cloudflare/workers-oauth-provider` | `src/oauth` | `src/oauth` | `src/oauth` |
 | Upstream IdP | Cloudflare Access | Amazon Cognito | Google account | Microsoft Entra ID |
 | State storage | Workers KV | DynamoDB (TTL) | Firestore (TTL) | Cosmos DB (TTL) |
@@ -56,10 +57,8 @@ flowchart TB
         CFW["Workers &nbsp;&nbsp; <i>OAuthProvider</i>"]
         CFA["Cloudflare Access<br/><i>or Google / Entra ID</i>"]
         CFKV["KV &nbsp;&nbsp; <i>OAUTH_KV</i>"]
-        CFDO["Durable Object<br/><i>CacooMCP session</i>"]
         CFW -. "OIDC" .-> CFA
         CFW --- CFKV
-        CFW --> CFDO
     end
 
     subgraph aws["AWS &nbsp;&nbsp; src/platforms/aws"]
@@ -167,6 +166,7 @@ Three layers, by how widely each one can be reused:
 src/
   core/                    Every runtime. Depends only on the MCP SDK and zod
     cacoo-client.ts        Cacoo API client (account routing + readOnly guard)
+    credentials.ts         Per-user API keys and organizations: parsing and overlay
     tools/                 14 MCP tools
     create-server.ts       MCP server assembly and authorization
   oauth/                   Node runtimes. OAuth authorization server (Express)
@@ -311,6 +311,8 @@ npm test             # 108 assertions
 | `npm run test:oauth` | DCR, PKCE, single-use tokens, scopes, revocation |
 | `npm run test:oauth-consent` | HTML escaping, signed cookies, CSRF, approval gate |
 | `npm run test:oauth-upstream` | Endpoint resolution for Cognito / Google / Entra ID |
+| `npm run test:credentials` | Per-user key / organization headers: parsing, overlay, and refusal to fall back on a typo |
+| `npm run test:user-credentials` | End to end: the caller's key and organization reaching the outgoing Cacoo request |
 
 IaC can be validated without cloud credentials:
 
