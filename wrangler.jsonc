@@ -3,20 +3,19 @@
 	"main": "src/platforms/cloudflare/index.ts",
 	"compatibility_date": "2025-04-01",
 	"compatibility_flags": ["nodejs_compat"],
+	// MCP はリクエストごとに組み立てるステートレス構成 (createMcpHandler)。
+	// v1 で作った Durable Object クラスは使わなくなったため v2 で削除する。
+	// 理由は src/platforms/cloudflare/index.ts の冒頭コメントを参照。
 	"migrations": [
 		{
 			"new_sqlite_classes": ["CacooMCP"],
 			"tag": "v1"
+		},
+		{
+			"deleted_classes": ["CacooMCP"],
+			"tag": "v2"
 		}
 	],
-	"durable_objects": {
-		"bindings": [
-			{
-				"class_name": "CacooMCP",
-				"name": "MCP_OBJECT"
-			}
-		]
-	},
 	"kv_namespaces": [
 		{
 			"binding": "OAUTH_KV",

@@ -1,7 +1,4 @@
 interface Env {
-	// Durable Object
-	MCP_OBJECT: DurableObjectNamespace;
-
 	// KV
 	OAUTH_KV: KVNamespace;
 

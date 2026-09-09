@@ -8,7 +8,7 @@ Prerequisites: [Cacoo configuration](cacoo.md) and one of
 | Role | Component |
 |---|---|
 | Runtime | Cloudflare Workers |
-| MCP session | Durable Objects (`McpAgent`) |
+| MCP session | Stateless (`createMcpHandler`, one server per request) |
 | OAuth authorization server | `@cloudflare/workers-oauth-provider` |
 | Upstream IdP | Cloudflare Access (SaaS app / OIDC) |
 | State storage | Workers KV |

@@ -9,14 +9,26 @@
 // という形。書き込みが POST に揃っているため、Backlog 版と同じ
 // 「GET 以外を拒否する」ガードがそのまま成立する。
 
+/** API のベース URL の既定値。宛先は常にサーバ側が決める。 */
+export const DEFAULT_BASE_URL = "https://cacoo.com";
+
 export interface CacooAccount {
 	name: string;
-	apiKey: string;
+	/**
+	 * サーバ設定に埋め込んだ共有 API キー。
+	 * 省略したアカウントは、利用者本人のキーが渡されたリクエストでのみ使える
+	 * (src/core/credentials.ts)。サーバに資格情報を置きたくない構成向け。
+	 */
+	apiKey?: string;
 	/**
 	 * 既定の organizationKey。diagrams / folders 系はレガシープラン以外で必須。
 	 * ツール側の引数で上書きできる。
 	 */
 	organizationKey?: string;
+	/** このリクエストで使うキーの出所。applyUserCredentials が設定する */
+	keySource?: "server" | "user";
+	/** このリクエストで使う organizationKey の出所 */
+	orgSource?: "server" | "user";
 	/**
 	 * true のアカウントでは書き込み系 API (GET 以外) を拒否する。
 	 * 共用アカウントの図を誤って更新・削除しないためのガード。
@@ -45,27 +57,66 @@ function assertWritable(account: CacooAccount, method: string, path: string): vo
 	}
 }
 
+/** そのアカウントに使えるキーが無いときに投げるエラー */
+export class MissingCredentialError extends Error {
+	constructor(account: CacooAccount) {
+		super(
+			`No Cacoo API key available for account "${account.name}". ` +
+				`This server does not store credentials, so the key must come from your client: ` +
+				`send it as the "X-Cacoo-Api-Key" header (single account) or ` +
+				`"X-Cacoo-Api-Keys: ${account.name}=<your key>" (multiple accounts). ` +
+				`Use list_accounts to see which accounts already have a key.`,
+		);
+		this.name = "MissingCredentialError";
+	}
+}
+
+/** 実際に API 呼び出しへ渡すキーを取り出す。全ての呼び出し経路がここを通る。 */
+export function requireApiKey(account: CacooAccount): string {
+	if (!account.apiKey) throw new MissingCredentialError(account);
+	return account.apiKey;
+}
+
 export interface CacooAccountsConfig {
 	accounts: CacooAccount[];
+	/**
+	 * `account` を省略したときに使うアカウント名。
+	 * クライアントがアカウントを持ち込む構成では設定側が空のこともある
+	 * (その場合は最初に渡されたアカウントが既定になる)。
+	 */
 	defaultAccount: string;
+	/**
+	 * true のとき、設定に無いアカウント名でもクライアントが使える。
+	 * 利用者が自分の Cacoo アカウントと組織を持ち込む構成向け。
+	 */
+	allowClientAccounts?: boolean;
 }
 
 export function parseAccountsConfig(configJson: string): CacooAccountsConfig {
 	try {
 		const config = JSON.parse(configJson) as CacooAccountsConfig;
-		if (!config.accounts || !Array.isArray(config.accounts) || config.accounts.length === 0) {
-			throw new Error("CACOO_ACCOUNTS_CONFIG must have at least one account");
+		if (!config.accounts || !Array.isArray(config.accounts)) {
+			throw new Error("CACOO_ACCOUNTS_CONFIG must have an accounts array");
+		}
+		config.allowClientAccounts = config.allowClientAccounts === true;
+		// クライアントがアカウントを持ち込む構成でのみ、設定側を空にできる
+		if (config.accounts.length === 0 && !config.allowClientAccounts) {
+			throw new Error(
+				"CACOO_ACCOUNTS_CONFIG must have at least one account, " +
+					"or set allowClientAccounts to true so clients can bring their own",
+			);
 		}
 		if (!config.defaultAccount) {
-			config.defaultAccount = config.accounts[0].name;
+			// 空の設定では既定を決められない。渡されたアカウントから後で埋める。
+			config.defaultAccount = config.accounts[0]?.name ?? "";
 		}
 		for (const account of config.accounts) {
-			if (!account.name || !account.apiKey) {
-				throw new Error("Account configuration invalid: each account needs name and apiKey");
+			if (!account.name) {
+				throw new Error("Account configuration invalid: each account needs a name");
 			}
 			// 明示的に true のときだけ書き込み禁止。未指定・不正値は書き込み可。
 			account.readOnly = account.readOnly === true;
-			account.baseUrl = (account.baseUrl ?? "https://cacoo.com").replace(/\/+$/, "");
+			account.baseUrl = (account.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, "");
 		}
 		return config;
 	} catch (e) {
@@ -81,6 +132,12 @@ export function resolveAccount(
 	accountName?: string,
 ): CacooAccount {
 	const targetName = accountName || config.defaultAccount;
+	if (!targetName) {
+		throw new Error(
+			"No Cacoo account is available. This server has none configured, so your client " +
+				'must send its own key with the "X-Cacoo-Api-Keys" header (NAME=key pairs).',
+		);
+	}
 	const account = config.accounts.find(
 		(a) => a.name.toLowerCase() === targetName.toLowerCase(),
 	);
@@ -151,7 +208,7 @@ export function formatCacooError(err: unknown): string {
 function buildUrl(account: CacooAccount, options: CacooApiOptions): URL {
 	const { path, query = {}, withOrganizationKey = false } = options;
 	const url = new URL(`${account.baseUrl}/api/v1/${path.replace(/^\/+/, "")}`);
-	url.searchParams.set("apiKey", account.apiKey);
+	url.searchParams.set("apiKey", requireApiKey(account));
 
 	if (withOrganizationKey) {
 		const orgKey = (query.organizationKey as string | undefined) ?? account.organizationKey;

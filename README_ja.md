@@ -12,9 +12,10 @@ Cloudflare Workers / AWS Lambda / Google Cloud Run / Azure Container Apps のい
 ## 特徴
 
 - **MCP ツール 14 個** — 図・フォルダ・組織・アカウント情報をカバー
-- **OAuth 2.1 + PKCE** — クライアント側に API キーを置かない
+- **OAuth 2.1 + PKCE** — ブラウザで認証します
 - **メールアドレスの許可リスト** — 上流 IdP に加えたアプリケーション層の認可
 - **複数の Cacoo アカウント** — 呼び出しごとに切り替え、アカウント単位の読み取り専用ガード付き
+- **利用者ごとの API キーと組織** — 共有のシステムユーザーではなく、操作した本人として Cacoo に記録されます。クライアントが本人のキーと `organizationKey` をリクエストごとに送り、**サーバは Cacoo の資格情報を保存しません** ([詳細](docs/cacoo_ja.md#利用者ごとの-api-キーと組織))
 - **4 つのデプロイ先** — ツール実装は共通
 
 ## デプロイ先を選ぶ
@@ -22,7 +23,7 @@ Cloudflare Workers / AWS Lambda / Google Cloud Run / Azure Container Apps のい
 | | Cloudflare | AWS | Google Cloud | Azure |
 |---|---|---|---|---|
 | 実行環境 | Workers (エッジ) | Lambda + API Gateway | Cloud Run | Container Apps |
-| MCP セッション | Durable Objects | ステートレス | ステートレス | ステートレス |
+| MCP セッション | ステートレス | ステートレス | ステートレス | ステートレス |
 | OAuth 認可サーバ | `@cloudflare/workers-oauth-provider` | `src/oauth` | `src/oauth` | `src/oauth` |
 | 上流 IdP | Cloudflare Access | Amazon Cognito | Google アカウント | Microsoft Entra ID |
 | 状態保存 | Workers KV | DynamoDB (TTL) | Firestore (TTL) | Cosmos DB (TTL) |
@@ -57,10 +58,8 @@ flowchart TB
         CFW["Workers &nbsp;&nbsp; <i>OAuthProvider</i>"]
         CFA["Cloudflare Access<br/><i>または Google / Entra ID</i>"]
         CFKV["KV &nbsp;&nbsp; <i>OAUTH_KV</i>"]
-        CFDO["Durable Object<br/><i>CacooMCP セッション</i>"]
         CFW -. "OIDC" .-> CFA
         CFW --- CFKV
-        CFW --> CFDO
     end
 
     subgraph aws["AWS &nbsp;&nbsp; src/platforms/aws"]
@@ -168,6 +167,7 @@ GET 以外を拒否するため、個々のツール実装に穴があっても�
 src/
   core/                    全実行環境で共通。MCP SDK と zod にしか依存しない
     cacoo-client.ts        Cacoo API クライアント (アカウント振り分け + readOnly ガード)
+    credentials.ts         利用者ごとの API キーと組織の解析・重ね合わせ
     tools/                 MCP ツール 14 個
     create-server.ts       MCP サーバの組み立てと認可判定
   oauth/                   Node 系の実行環境で共通。OAuth 認可サーバ (Express)
@@ -311,6 +311,8 @@ npm test             # 108 件
 | `npm run test:oauth` | DCR、PKCE、トークンの使い捨て、スコープ、失効 |
 | `npm run test:oauth-consent` | HTML エスケープ、署名 Cookie、CSRF、承認ゲート |
 | `npm run test:oauth-upstream` | Cognito / Google / Entra ID のエンドポイント解決 |
+| `npm run test:credentials` | 利用者ごとのキー・組織ヘッダの解析、重ね合わせ、綴り違いを黙って通さないこと |
+| `npm run test:user-credentials` | 本人のキーと組織が Cacoo への発信リクエストに乗るまでの通し確認 |
 
 IaC はクラウドの認証情報なしで検証できます。
 

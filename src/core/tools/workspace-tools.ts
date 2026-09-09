@@ -11,7 +11,10 @@ import { accountParam, asText, organizationKeyParam, withErrorHandling } from ".
 export function registerWorkspaceTools(server: McpServer, config: CacooAccountsConfig) {
 	server.tool(
 		"list_accounts",
-		"List the configured Cacoo accounts, which one is the default, and whether each allows writes.",
+		"List the configured Cacoo accounts, which one is the default, whether each allows writes, " +
+			"and whether an API key is available for it in this session. " +
+			'An account with credential "missing" cannot be used until the client sends the ' +
+			"caller's own API key.",
 		{},
 		async () => {
 			const accounts = config.accounts.map((a) => ({
@@ -20,6 +23,9 @@ export function registerWorkspaceTools(server: McpServer, config: CacooAccountsC
 				organizationKey: a.organizationKey,
 				isDefault: a.name === config.defaultAccount,
 				readOnly: a.readOnly === true,
+				// キーの値そのものは絶対に返さない。使えるかどうかと出所だけを示す。
+				credential: a.apiKey ? (a.keySource ?? "server") : "missing",
+				organizationKeySource: a.organizationKey ? (a.orgSource ?? "server") : undefined,
 			}));
 			return asText(accounts);
 		},
