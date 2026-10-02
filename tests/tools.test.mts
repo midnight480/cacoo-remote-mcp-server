@@ -1,5 +1,5 @@
 // ツール登録の検証。
-// 13 ツールが漏れなく登録されること、許可リスト外のユーザーには
+// 18 ツールが漏れなく登録されること、許可リスト外のユーザーには
 // access_denied しか見えないことを確認する。
 //   npm run test:tools
 
@@ -22,7 +22,9 @@ function toolNames(server: any): string[] {
 const EXPECTED = [
   // diagram
   "copy_diagram", "create_diagram", "delete_diagram", "get_diagram",
-  "get_diagram_contents", "get_diagram_image", "list_diagrams", "move_diagram",
+  "get_diagram_contents", "get_diagram_image", "get_editor_token",
+  "get_inserted_image", "get_oembed", "list_diagrams", "move_diagram",
+  "register_editor_automation",
   // workspace
   "get_account", "get_license", "get_user", "list_accounts", "list_folders",
   "list_organizations",

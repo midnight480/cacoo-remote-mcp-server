@@ -160,6 +160,16 @@ export interface CacooApiOptions {
 	 * diagrams / folders 系のエンドポイントで使う。
 	 */
 	withOrganizationKey?: boolean;
+	/**
+	 * true のとき apiKey を付けず、キーが無いアカウントでも呼べる。
+	 * oEmbed のように認証不要なエンドポイント用。
+	 */
+	noAuth?: boolean;
+	/**
+	 * true のとき path を /api/v1 ではなく baseUrl 直下に解決する。
+	 * oEmbed (/oembed.json) のような API 名前空間の外にあるエンドポイント用。
+	 */
+	outsideApi?: boolean;
 }
 
 /** Cacoo API のエラー応答 */
@@ -207,8 +217,11 @@ export function formatCacooError(err: unknown): string {
 
 function buildUrl(account: CacooAccount, options: CacooApiOptions): URL {
 	const { path, query = {}, withOrganizationKey = false } = options;
-	const url = new URL(`${account.baseUrl}/api/v1/${path.replace(/^\/+/, "")}`);
-	url.searchParams.set("apiKey", requireApiKey(account));
+	const base = options.outsideApi ? account.baseUrl : `${account.baseUrl}/api/v1`;
+	const url = new URL(`${base}/${path.replace(/^\/+/, "")}`);
+	if (!options.noAuth) {
+		url.searchParams.set("apiKey", requireApiKey(account));
+	}
 
 	if (withOrganizationKey) {
 		const orgKey = (query.organizationKey as string | undefined) ?? account.organizationKey;

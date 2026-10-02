@@ -214,4 +214,135 @@ export function registerDiagramTools(server: McpServer, config: CacooAccountsCon
 			);
 		}),
 	);
+
+	server.tool(
+		"get_inserted_image",
+		"Get an image inserted into a diagram, identified by the source-id shown in the " +
+			"diagram contents XML. Fails for images over 4MB.",
+		{
+			...accountParam,
+			diagramId: z.string().describe("The diagram ID."),
+			imageSourceId: z
+				.string()
+				.describe(
+					"The source-id attribute of an <image> element returned by get_diagram_contents.",
+				),
+		},
+		withErrorHandling(async ({ account: accountName, diagramId, imageSourceId }) => {
+			const account = resolveAccount(config, accountName);
+			return asImage(
+				await callCacooApiBinary(account, {
+					path: `diagrams/${encodeURIComponent(diagramId)}/contents/images/${encodeURIComponent(imageSourceId)}`,
+				}),
+			);
+		}),
+	);
+
+	server.tool(
+		"get_editor_token",
+		"Get a token for opening the Cacoo Editor without signing in " +
+			"(the 'editorToken' parameter of the Editor API).",
+		{
+			...accountParam,
+			diagramId: z.string().describe("The diagram ID."),
+		},
+		withErrorHandling(async ({ account: accountName, diagramId }) => {
+			const account = resolveAccount(config, accountName);
+			return asText(
+				await callCacooApi(account, {
+					path: `diagrams/${encodeURIComponent(diagramId)}/editor/token.json`,
+				}),
+			);
+		}),
+	);
+
+	server.tool(
+		"register_editor_automation",
+		"Register operations that run automatically when the Editor is opened. " +
+			"Returns an 'automationToken' for the Editor API. The operations modify the diagram.",
+		{
+			...accountParam,
+			diagramId: z.string().describe("The diagram ID."),
+			operations: z
+				.array(
+					z.discriminatedUnion("type", [
+						z.object({
+							type: z.literal("AddImageUrl"),
+							parameter: z.object({
+								url: z.string().describe("URL of the image to insert."),
+								x: z.number().int().optional().describe("X coordinate (default 0)."),
+								y: z.number().int().optional().describe("Y coordinate (default 0)."),
+							}),
+						}),
+						z.object({
+							type: z.literal("DeleteObject"),
+							parameter: z.object({
+								uid: z
+									.string()
+									.describe("uid of the object to delete (from get_diagram_contents)."),
+								sheetUid: z
+									.string()
+									.describe("uid of the sheet containing the object."),
+							}),
+						}),
+					]),
+				)
+				.describe("Operations to run when the Editor opens."),
+			onError: z
+				.enum(["ignore", "message", "stop"])
+				.optional()
+				.describe(
+					'Behavior when an operation fails: "ignore" continues, "message" shows an ' +
+						'error in the Editor and aborts, "stop" aborts silently (default "ignore").',
+				),
+		},
+		withErrorHandling(async ({ account: accountName, diagramId, operations, onError }) => {
+			const account = resolveAccount(config, accountName);
+			return asText(
+				await callCacooApi(account, {
+					method: "POST",
+					path: `diagrams/${encodeURIComponent(diagramId)}/editor/automation.json`,
+					query: {
+						command: JSON.stringify({ operations, error: onError ?? "ignore" }),
+					},
+				}),
+			);
+		}),
+	);
+
+	server.tool(
+		"get_oembed",
+		"Get oEmbed metadata (embed HTML, thumbnail URL, dimensions) for a diagram page " +
+			"URL. No API key is needed, but the diagram must be a public resource.",
+		{
+			...accountParam,
+			url: z
+				.string()
+				.describe(
+					"URL of the diagram detail page, e.g. https://cacoo.com/diagrams/00e77f4dc9973517",
+				),
+			maxwidth: z
+				.number()
+				.int()
+				.optional()
+				.describe("Maximum width of the embedding viewer (default 450)."),
+			maxheight: z
+				.number()
+				.int()
+				.optional()
+				.describe("Maximum height of the embedding viewer (default 350)."),
+		},
+		withErrorHandling(async ({ account: accountName, url, maxwidth, maxheight }) => {
+			const account = resolveAccount(config, accountName);
+			// oEmbed は /api/v1 の外にあり、認証も不要
+			return asText(
+				await callCacooApi(account, {
+					path: "oembed.json",
+					outsideApi: true,
+					noAuth: true,
+					query: { url, maxwidth, maxheight },
+				}),
+			);
+		}),
+	);
 }
