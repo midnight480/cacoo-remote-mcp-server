@@ -11,7 +11,7 @@ Cloudflare Workers / AWS Lambda / Google Cloud Run / Azure Container Apps のい
 
 ## 特徴
 
-- **MCP ツール 14 個** — 図・フォルダ・組織・アカウント情報をカバー
+- **MCP ツール 18 個** — 図・フォルダ・組織・アカウント情報をカバー
 - **OAuth 2.1 + PKCE** — ブラウザで認証します
 - **メールアドレスの許可リスト** — 上流 IdP に加えたアプリケーション層の認可
 - **複数の Cacoo アカウント** — 呼び出しごとに切り替え、アカウント単位の読み取り専用ガード付き
@@ -105,7 +105,7 @@ flowchart TB
 
     subgraph shared["src/core &nbsp;&nbsp; 全実行環境で共通"]
         CS["create-server.ts<br/><i>ツール登録 + 許可リスト判定</i>"]
-        TOOLS["tools/ &nbsp;&nbsp; <i>MCP ツール 14 個</i>"]
+        TOOLS["tools/ &nbsp;&nbsp; <i>MCP ツール 18 個</i>"]
         BC["cacoo-client.ts<br/><i>アカウント振り分け + readOnly ガード</i>"]
         CS --> TOOLS --> BC
     end
@@ -168,7 +168,7 @@ src/
   core/                    全実行環境で共通。MCP SDK と zod にしか依存しない
     cacoo-client.ts        Cacoo API クライアント (アカウント振り分け + readOnly ガード)
     credentials.ts         利用者ごとの API キーと組織の解析・重ね合わせ
-    tools/                 MCP ツール 14 個
+    tools/                 MCP ツール 18 個
     create-server.ts       MCP サーバの組み立てと認可判定
   oauth/                   Node 系の実行環境で共通。OAuth 認可サーバ (Express)
     provider.ts            OAuthServerProvider の実装
@@ -270,6 +270,10 @@ Claude Code はこのバンドルを使いません (`claude mcp add --transport
 | `delete_diagram` | 図を削除 |
 | `get_diagram_image` | 図 (または 1 シート) の PNG |
 | `get_diagram_contents` | 図の構造 (図形・テキスト・線) を XML で取得 |
+| `get_inserted_image` | 図に挿入された画像を `source-id` で取得 |
+| `get_editor_token` | サインインなしで Cacoo エディタを開くトークン |
+| `register_editor_automation` | エディタを開いたときに実行する操作 (URL 指定の画像挿入・オブジェクト削除) を登録 |
+| `get_oembed` | 公開図ページ URL の oEmbed メタデータ (API キー不要) |
 
 ### ワークスペース
 
@@ -301,13 +305,13 @@ Claude Code はこのバンドルを使いません (`claude mcp add --transport
 ```bash
 npm install
 npm run type-check   # 4 プラットフォーム分
-npm test             # 108 件
+npm test             # 170 件
 ```
 
 | テスト | 対象 |
 |---|---|
 | `npm run test:cacoo-client` | URL 組み立て、`organizationKey` の解決、readOnly ガード、エラー整形、画像 4MB 上限 |
-| `npm run test:tools` | 14 ツールの登録、許可リストによる出し分け |
+| `npm run test:tools` | 18 ツールの登録、許可リストによる出し分け |
 | `npm run test:oauth` | DCR、PKCE、トークンの使い捨て、スコープ、失効 |
 | `npm run test:oauth-consent` | HTML エスケープ、署名 Cookie、CSRF、承認ゲート |
 | `npm run test:oauth-upstream` | Cognito / Google / Entra ID のエンドポイント解決 |

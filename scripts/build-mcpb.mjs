@@ -92,7 +92,7 @@ function buildManifest(host) {
 		display_name: "Cacoo Remote MCP Server",
 		version: pkg.version,
 		description:
-			"Connects Claude to a self-hosted Cacoo Remote MCP Server, exposing diagrams, folders and account information as 14 tools.",
+			"Connects Claude to a self-hosted Cacoo Remote MCP Server, exposing diagrams, folders and account information as 18 tools.",
 		long_description:
 			"This bundle does not contain the server itself. It ships mcp-remote as a local stdio proxy " +
 			"that connects to your own deployment of cacoo-remote-mcp-server (Cloudflare Workers, AWS Lambda, Cloud Run or Container Apps). " +

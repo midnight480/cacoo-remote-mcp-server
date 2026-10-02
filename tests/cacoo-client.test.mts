@@ -85,6 +85,27 @@ ok("0 は送る", u2.searchParams.get("c") === "0");
 await callCacooApi(resolveAccount(cfg, "onprem"), { path: "account.json" });
 ok("baseUrl を尊重する", lastUrl.startsWith("https://cacoo.example.com/api/v1/"));
 
+// oEmbed は /api/v1 の外にあり、認証不要 (apiKey を付けない)
+await callCacooApi(resolveAccount(cfg, "main"), {
+  path: "oembed.json", outsideApi: true, noAuth: true,
+  query: { url: "https://cacoo.com/diagrams/x" },
+});
+const u3 = new URL(lastUrl);
+ok("outsideApi は /api/v1 を付けない", u3.pathname === "/oembed.json");
+ok("noAuth は apiKey を送らない", !u3.searchParams.has("apiKey"));
+ok("oEmbed の url が載る", u3.searchParams.get("url") === "https://cacoo.com/diagrams/x");
+
+// キー未設定のアカウントでも noAuth なら呼べる
+const noKeyCfg = parseAccountsConfig(JSON.stringify({ accounts: [{ name: "nokey" }] }));
+await callCacooApi(resolveAccount(noKeyCfg, "nokey"), {
+  path: "oembed.json", outsideApi: true, noAuth: true,
+});
+ok("キー無しアカウントでも noAuth は通る", lastUrl.includes("/oembed.json"));
+threw = false;
+try { await callCacooApi(resolveAccount(noKeyCfg, "nokey"), { path: "diagrams.json" }); }
+catch { threw = true; }
+ok("キー無しアカウントの通常呼び出しは拒否される", threw);
+
 console.log("readOnly ガード:");
 await callCacooApi(resolveAccount(cfg, "shared"), { path: "diagrams.json" });
 ok("読み取りは通る", lastMethod === "GET");

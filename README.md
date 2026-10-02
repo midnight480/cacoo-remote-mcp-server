@@ -10,7 +10,7 @@ once in the browser with OAuth, and your Cacoo API key never leaves the server.
 
 ## Features
 
-- **14 MCP tools** covering diagrams, folders, organizations and account information
+- **18 MCP tools** covering diagrams, folders, organizations and account information
 - **OAuth 2.1 with PKCE** — clients authenticate in the browser
 - **Email allowlist** — application-level authorization on top of the upstream IdP
 - **Multiple Cacoo accounts** — route per call, with a per-account read-only guard
@@ -104,7 +104,7 @@ flowchart TB
 
     subgraph shared["src/core &nbsp;&nbsp; every runtime"]
         CS["create-server.ts<br/><i>tool registration + email allowlist</i>"]
-        TOOLS["tools/ &nbsp;&nbsp; <i>14 MCP tools</i>"]
+        TOOLS["tools/ &nbsp;&nbsp; <i>18 MCP tools</i>"]
         BC["cacoo-client.ts<br/><i>account routing + readOnly guard</i>"]
         CS --> TOOLS --> BC
     end
@@ -167,7 +167,7 @@ src/
   core/                    Every runtime. Depends only on the MCP SDK and zod
     cacoo-client.ts        Cacoo API client (account routing + readOnly guard)
     credentials.ts         Per-user API keys and organizations: parsing and overlay
-    tools/                 14 MCP tools
+    tools/                 18 MCP tools
     create-server.ts       MCP server assembly and authorization
   oauth/                   Node runtimes. OAuth authorization server (Express)
     provider.ts            OAuthServerProvider implementation
@@ -269,6 +269,10 @@ does not use this bundle — it stays on `claude mcp add --transport http`.
 | `delete_diagram` | Delete a diagram |
 | `get_diagram_image` | PNG rendering of a diagram or one sheet |
 | `get_diagram_contents` | Structured contents (shapes, text, lines) as XML |
+| `get_inserted_image` | An image embedded in a diagram, by its `source-id` |
+| `get_editor_token` | Token to open the Cacoo Editor without signing in |
+| `register_editor_automation` | Queue operations (insert image by URL, delete object) that run when the Editor opens |
+| `get_oembed` | oEmbed metadata for a public diagram page URL (no API key needed) |
 
 ### Workspace
 
@@ -301,13 +305,13 @@ does not use this bundle — it stays on `claude mcp add --transport http`.
 ```bash
 npm install
 npm run type-check   # all four platforms
-npm test             # 108 assertions
+npm test             # 170 assertions
 ```
 
 | Test | Covers |
 |---|---|
 | `npm run test:cacoo-client` | URL building, `organizationKey` resolution, readOnly guard, error formatting, 4MB image cap |
-| `npm run test:tools` | All 14 tools register; allowlist gating |
+| `npm run test:tools` | All 18 tools register; allowlist gating |
 | `npm run test:oauth` | DCR, PKCE, single-use tokens, scopes, revocation |
 | `npm run test:oauth-consent` | HTML escaping, signed cookies, CSRF, approval gate |
 | `npm run test:oauth-upstream` | Endpoint resolution for Cognito / Google / Entra ID |
